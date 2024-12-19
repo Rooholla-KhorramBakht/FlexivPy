@@ -38,7 +38,7 @@ class DiffIKController:
         self.ef_frame = ef_frame
         self.q0 = self.model.q0.reshape(7, 1).copy()
         self.T_cmd_fun = T_cmd_fun
-        self.T_cmd = None
+        self.T_cmd = T_cmd
         self.dt = dt
         self.joint_kv = joint_kv
         self.joint_kp = joint_kp
@@ -85,18 +85,20 @@ class DiffIKController:
         self.T_cmd = T_cmd
 
     def setup(self, s):
-        if self.T_cmd is None:
-            info = self.model.getInfo(np.array(s.q), np.array(s.dq))
-            self.T_cmd = info["poses"][self.ef_frame]
+        # if self.T_cmd is None
+        #     info = self.model.getInfo(np.array(s.q), np.array(s.dq))
+        #     self.T_cmd = info["poses"][self.ef_frame]
         self.q_des = np.array(s.q)
 
     def get_control(self, state, t):
         if self.T_cmd is None:
             T_des = self.T_cmd_fun(state)
+            print(T_des)
         else:
             T_des = self.T_cmd
 
         dq_des = self.__call__(np.array(state.q), np.array(state.dq), T_des)
+        print(dq_des)
         self.q_des += self.dt * dq_des
         if self.control_mode == 3:
             return FlexivCmd(dq=dq_des, mode=self.control_mode)

@@ -15,11 +15,11 @@ import matplotlib.pyplot as plt
 
 
 class CameraDDSClient:
-    def __init__(self):
+    def __init__(self, camera_topic="EnvImage"):
 
-        self.domain_participant = DomainParticipant(42)
+        self.domain_participant = DomainParticipant()
 
-        self.topic_env_image = Topic(self.domain_participant, "EnvImage", EnvImage)
+        self.topic_env_image = Topic(self.domain_participant, camera_topic, EnvImage)
         self.subscriber_env_image = Subscriber(self.domain_participant)
         self.reader_env_image = DataReader(
             self.subscriber_env_image, self.topic_env_image

@@ -59,7 +59,13 @@ def blocking_runner(robot, controller, timeout=60, callback=None):
             )
             for _ in range(num_steps):
                 robot.step()
-        time.sleep(max(0, controller.dt - (time.time() - tic)))
+
+        tic_n = time.time()
+        if tic_n - tic > controller.dt:
+            print(
+                f"Warning: the controller is taking too long {tic_n - tic } [s] to compute the control with dt = {controller.dt} [s]"
+            )
+        time.sleep(max(0, controller.dt - (tic_n - tic)))
         counter += 1
     return exit_status
 

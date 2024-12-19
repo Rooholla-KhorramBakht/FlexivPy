@@ -137,18 +137,29 @@ class RealSenseCamera:
         self._thread = threading.Thread(target=self._run_grab_frames)
         self._thread.start()
         # Get stream profiles
-        self.depth_profile = self.profile.get_stream(
-            rs.stream.depth
-        ).as_video_stream_profile()
-        self.color_profile = self.profile.get_stream(
-            rs.stream.color
-        ).as_video_stream_profile()
-        self.ir1_profile = self.profile.get_stream(
-            rs.stream.infrared, 1
-        ).as_video_stream_profile()
-        self.ir2_profile = self.profile.get_stream(
-            rs.stream.infrared, 2
-        ).as_video_stream_profile()
+
+        self.depth_profile = None
+
+        if self.enable_depth:
+            self.depth_profile = self.profile.get_stream(
+                rs.stream.depth
+            ).as_video_stream_profile()
+
+        self.color_profile = None
+        if self.enable_color:
+            self.color_profile = self.profile.get_stream(
+                rs.stream.color
+            ).as_video_stream_profile()
+        self.ir1_profile = None
+        self.ir2_profile = None
+
+        if self.enable_ir:
+            self.ir1_profile = self.profile.get_stream(
+                rs.stream.infrared, 1
+            ).as_video_stream_profile()
+            self.ir2_profile = self.profile.get_stream(
+                rs.stream.infrared, 2
+            ).as_video_stream_profile()
         # Depth frame aligner
         self.align = rs.align(rs.stream.color)
 

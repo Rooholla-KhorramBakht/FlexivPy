@@ -1247,7 +1247,7 @@ int main(int argc, char *argv[])
 
   /* First, a domain participant is needed.
    * Create one on the default domain. */
-  dds::domain::DomainParticipant participant(42);
+  dds::domain::DomainParticipant participant(domain::default_id());
 
   /* To subscribe to something, a topic is needed. */
   dds::topic::Topic<FlexivMsg::FlexivCmd> topic_cmd(participant, "FlexivCmd");
