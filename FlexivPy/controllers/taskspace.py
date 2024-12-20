@@ -10,6 +10,79 @@ from FlexivPy import ASSETS_PATH
 from FlexivPy.planners.rrt import RRT
 
 
+class Get_T_from_controller_no_drift:
+    def __init__(self, joy, T0=None, max_v=np.inf):
+        self.joy = joy
+        self.T0 = T0
+        self.max_v = max_v
+        # Initialize the desired pose
+        self.x0 = 0
+        self.y0 = 0.0
+        self.z0 = 0.0
+        self.R0 = np.eye(3)
+
+    def __call__(self, state):
+
+        if self.T0 is None:
+            raise Exception("Initial pose is not provided!")
+
+        rate = 0.25 / 100.0
+
+        joy_state = self.joy.getStates()
+        left_joy = joy_state["left_joy"]
+        right_joy = joy_state["right_joy"]
+
+        if joy_state["right_bumper"] == 0:
+            vx_cmd = -1 * right_joy[1]
+            vy_cmd = -1 * right_joy[0]
+            vz_cmd = 1 * left_joy[0]
+
+            if vx_cmd > self.max_v:
+                vx_cmd = self.max_v
+            if vx_cmd < -self.max_v:
+                vx_cmd = -self.max_v
+            if vy_cmd > self.max_v:
+                vy_cmd = self.max_v
+            if vy_cmd < -self.max_v:
+                vy_cmd = -self.max_v
+
+            if np.abs(vx_cmd) < 0.1:
+                vx_cmd = 0
+            if np.abs(vy_cmd) < 0.1:
+                vy_cmd = 0
+            if np.abs(vz_cmd) < 0.1:
+                vz_cmd = 0
+            self.y0 = self.y0 + vy_cmd * rate
+            self.x0 = self.x0 + vx_cmd * rate
+            self.z0 = self.z0 - vz_cmd * rate
+        else:
+            wx_cmd = right_joy[1]
+            wy_cmd = right_joy[0]
+            wz_cmd = left_joy[0]
+            if np.abs(wx_cmd) < 0.1:
+                wx_cmd = 0
+            if np.abs(wy_cmd) < 0.1:
+                wy_cmd = 0
+            if np.abs(wz_cmd) < 0.1:
+                wz_cmd = 0
+            cmd = np.array([wx_cmd, wy_cmd, wz_cmd])
+            omega_hat = np.array(
+                [[0, -cmd[2], cmd[1]], [cmd[2], 0, -cmd[0]], [-cmd[1], cmd[0], 0]]
+            )
+            self.R0 = self.R0 @ (np.eye(3) + omega_hat / 100)
+
+        # time.sleep(0.01)
+        T_cmd = self.T0 @ np.vstack(
+            [
+                np.hstack(
+                    [self.R0, np.array([self.x0, self.y0, self.z0]).reshape(3, 1)]
+                ),
+                np.array([0, 0, 0, 1]),
+            ]
+        )
+        return T_cmd
+
+
 class DiffIKController:
     def __init__(
         self,
@@ -93,12 +166,10 @@ class DiffIKController:
     def get_control(self, state, t):
         if self.T_cmd is None:
             T_des = self.T_cmd_fun(state)
-            print(T_des)
         else:
             T_des = self.T_cmd
 
         dq_des = self.__call__(np.array(state.q), np.array(state.dq), T_des)
-        print(dq_des)
         self.q_des += self.dt * dq_des
         if self.control_mode == 3:
             return FlexivCmd(dq=dq_des, mode=self.control_mode)

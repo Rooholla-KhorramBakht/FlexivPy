@@ -282,7 +282,7 @@ class GoJointConfigurationVelocity:
         """ """
         v = self.kd * (self.qgoal - state.q)
         if np.linalg.norm(v) > self.max_v:
-            v /= np.linalg.norm(v)
+            v = v / np.linalg.norm(v) * self.max_v
 
         if self.smooth_velocity > 1e-6:
             v = (
