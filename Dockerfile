@@ -134,4 +134,10 @@ RUN echo "conda activate flexivpy" >> ~/.bashrc
 ENV NVIDIA_VISIBLE_DEVICES all
 ENV NVIDIA_DRIVER_CAPABILITIES graphics,utility,compute
 
+
+# Create and set the working directory
+RUN mkdir -p /home/FlexivPy
+WORKDIR /home/FlexivPy
+
+
 ENTRYPOINT [ "/bin/bash", "-l", "-c" ]
