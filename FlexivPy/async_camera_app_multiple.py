@@ -84,7 +84,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
     # Create a single DomainParticipant and Publisher for all cameras
-    domain_participant = DomainParticipant()
+    domain_participant = DomainParticipant(1)
     publisher = Publisher(domain_participant)
 
     camera_writers = []

@@ -36,7 +36,7 @@ class AsyncSimManager:
         self.CV2 = None
         self.dt = simulator.dt
         self.timeout = timeout
-        self.domain_participant = DomainParticipant()
+        self.domain_participant = DomainParticipant(1)
         self.topic_state = Topic(self.domain_participant, "FlexivState", FlexivState)
         self.publisher = Publisher(self.domain_participant)
         self.writer = DataWriter(self.publisher, self.topic_state)

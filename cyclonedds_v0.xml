@@ -7,7 +7,7 @@
     <Discovery> 
     <Ports>
     <Base>
-     55556
+     50000
     </Base>
     </Ports>
    </Discovery>

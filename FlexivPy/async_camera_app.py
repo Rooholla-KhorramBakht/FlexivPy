@@ -26,7 +26,7 @@ class ImagePublisher:
         width=320,
         height=240,
     ):
-        self.domain_participant = DomainParticipant()
+        self.domain_participant = DomainParticipant(1)
         self.topic_state_image = Topic(self.domain_participant, topic_name, EnvImage)
         self.publisher_image = Publisher(self.domain_participant)
         self.writer_image = DataWriter(self.publisher_image, self.topic_state_image)
