@@ -54,6 +54,7 @@ class FlexivDDSClient:
 
         self.warning_no_joint_states_dt = 0.1
         self.warning_no_joint_states_send = False
+        self.error_no_joint_states_dt = 0.2
 
         self.warning_no_env_states_dt = 0.1
         self.warning_no_env_states_send = False
@@ -61,7 +62,7 @@ class FlexivDDSClient:
         self.warning_no_env_image_dt = 0.2
         self.warning_no_env_image_send = 0.2
 
-        self.max_wait_time_first_msg = 20
+        self.max_wait_time_first_msg = 1
         self.server_process = None
 
         if len(create_server_cmd):
@@ -162,4 +163,13 @@ class FlexivDDSClient:
                     f"warning: client did not recieve joint states in  last {self.warning_no_joint_states_dt} [s]"
                 )
                 self.warning_no_joint_states_send = True
+
+            if (
+                tic - self.time_last_state > self.error_no_joint_states_dt
+                and self.warning_no_joint_states_send
+            ):
+                raise Exception(
+                    f"error: client did not recieve joint states in  last {self.error_no_joint_states_dt} [s]"
+                )
+
             return self.last_state

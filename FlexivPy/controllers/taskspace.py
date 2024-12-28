@@ -1,3 +1,5 @@
+from scipy import interpolate
+
 import numpy as np
 import pinocchio as pin
 from FlexivPy.robot.dds.flexiv_messages import (
@@ -8,6 +10,8 @@ from pinocchio.visualize import MeshcatVisualizer
 import os
 from FlexivPy import ASSETS_PATH
 from FlexivPy.planners.rrt import RRT
+
+import time
 
 
 class Get_T_from_controller_no_drift:
@@ -27,7 +31,7 @@ class Get_T_from_controller_no_drift:
             raise Exception("Initial pose is not provided!")
 
         rate = 0.25 / 100.0
-
+        
         joy_state = self.joy.getStates()
         left_joy = joy_state["left_joy"]
         right_joy = joy_state["right_joy"]
@@ -81,6 +85,67 @@ class Get_T_from_controller_no_drift:
             ]
         )
         return T_cmd
+
+
+class Follow_traj:
+    def __init__(self, traj, T0, robot_model, link_name="link7"):
+        """ "
+        traj: (N, 3) with time first.
+        """
+        self.traj = traj
+        self.idx = 0
+        self.first_t = None
+
+        self.fx = interpolate.interp1d(traj[:, 0], traj[:, 1])
+        self.fy = interpolate.interp1d(traj[:, 0], traj[:, 2])
+
+        self.Rref = T0[:3, :3].copy()
+        self.pref = T0[:3, 3].copy()
+
+        self.ps_t = []
+        self.ps = []
+        self.extra_time = 0.2
+        self.link_name = link_name
+        self.robot_model = robot_model
+
+    def __call__(self, state):
+
+        if self.first_t is None:
+            self.first_t = time.time()
+
+        elapsed_t = time.time() - self.first_t
+
+        D = self.robot_model.getInfo(state.q, state.dq)
+        p = D["poses"][self.link_name][:2, 3]
+
+        self.ps.append(p)
+        self.ps_t.append(elapsed_t)
+
+        query_t = elapsed_t
+
+        if elapsed_t > self.traj[-1, 0]:
+            query_t = self.traj[-1, 0]
+
+        # print("elapsed_t", elapsed_t)
+        px = self.fx(query_t)
+        py = self.fy(query_t)
+
+        dp = np.array([px, py, 0])
+
+        T_cmd = np.vstack(
+            [
+                np.hstack([self.Rref, (self.pref + dp).reshape(3, 1)]),
+                np.array([0, 0, 0, 1]),
+            ]
+        )
+        return T_cmd
+
+    def applicable(self, s, t):
+        return t < self.traj[-1, 0] + self.extra_time
+
+    def goal_reached(self, s, t):
+        # just run this until it is not applicable anymore
+        return False
 
 
 class DiffIKController:
@@ -183,7 +248,7 @@ class DiffIKController:
             )
 
     def applicable(self, s, t):
-        return True
+        return self.T_cmd_fun.applicable(s, t)
 
     def goal_reached(self, s, t):
-        return False
+        return self.T_cmd_fun.goal_reached(s, t)

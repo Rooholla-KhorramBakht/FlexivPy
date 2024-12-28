@@ -57,6 +57,10 @@ class FlexivModel:
         return np.vstack([np.hstack([R, t]), np.array([0, 0, 0, 1])])
 
     def getInfo(self, q, dq):
+        if isinstance(q,list):
+            q = np.array(q)
+        if isinstance(dq,list):
+            dq = np.array(dq)
         _q = q.squeeze()
         _dq = dq.squeeze()
         self.robot.computeJointJacobians(_q)
