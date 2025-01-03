@@ -31,7 +31,7 @@ class Get_T_from_controller_no_drift:
             raise Exception("Initial pose is not provided!")
 
         rate = 0.25 / 100.0
-        
+
         joy_state = self.joy.getStates()
         left_joy = joy_state["left_joy"]
         right_joy = joy_state["right_joy"]
@@ -86,9 +86,15 @@ class Get_T_from_controller_no_drift:
         )
         return T_cmd
 
+    def applicable(self, s, t):
+        return True
 
-class Follow_traj:
-    def __init__(self, traj, T0, robot_model, link_name="link7"):
+    def goal_reached(self, s, t):
+        return False
+
+
+class Follow_traj_2D:
+    def __init__(self, traj, R_ref, z_ref, robot_model, link_name="link7"):
         """ "
         traj: (N, 3) with time first.
         """
@@ -99,9 +105,8 @@ class Follow_traj:
         self.fx = interpolate.interp1d(traj[:, 0], traj[:, 1])
         self.fy = interpolate.interp1d(traj[:, 0], traj[:, 2])
 
-        self.Rref = T0[:3, :3].copy()
-        self.pref = T0[:3, 3].copy()
-
+        self.R_ref = R_ref
+        self.z_ref = z_ref
         self.ps_t = []
         self.ps = []
         self.extra_time = 0.2
@@ -126,15 +131,14 @@ class Follow_traj:
         if elapsed_t > self.traj[-1, 0]:
             query_t = self.traj[-1, 0]
 
-        # print("elapsed_t", elapsed_t)
         px = self.fx(query_t)
         py = self.fy(query_t)
 
-        dp = np.array([px, py, 0])
+        pref = np.array([px, py, self.z_ref])
 
         T_cmd = np.vstack(
             [
-                np.hstack([self.Rref, (self.pref + dp).reshape(3, 1)]),
+                np.hstack([self.R_ref, pref.reshape(3, 1)]),
                 np.array([0, 0, 0, 1]),
             ]
         )
@@ -164,6 +168,7 @@ class DiffIKController:
         dq_max=10,
         control_mode="velocity",
         max_error=0.05,
+        smooth = 1.
     ):
         if T_cmd_fun is None and T_cmd is None:
             raise Exception("Either T_cmd_fun or T_cmd must be provided!")
@@ -182,6 +187,7 @@ class DiffIKController:
         self.joint_kp = joint_kp
         self.dq_max = dq_max
         self.max_error = max_error
+        self.smooth = smooth
         try:
             self.control_mode = {"velocity": 3, "torque": 2, "position": 1}[
                 control_mode
@@ -237,6 +243,8 @@ class DiffIKController:
         dq_des = self.__call__(np.array(state.q), np.array(state.dq), T_des)
         self.q_des += self.dt * dq_des
         if self.control_mode == 3:
+            # smooth velocity control. 
+            dq_des = self.smooth * dq_des + self.smooth * np.array(state.dq)
             return FlexivCmd(dq=dq_des, mode=self.control_mode)
         else:
             return FlexivCmd(
