@@ -27,10 +27,13 @@ class DiffIKController:
         control_mode="velocity",
         max_error=0.05,
     ):
-        if T_cmd_fun is None and T_cmd is None:
-            raise Exception("Either T_cmd_fun or T_cmd must be provided!")
+        # if (T_cmd_fun is None ) and (T_cmd is None):
+        #     raise Exception("Either T_cmd_fun or T_cmd must be provided!")
 
         # define solver
+        self.gripper_width = 0.0
+        self.gripper_force = 10.
+        self.gripper_cmd = 'close'
         self.model = model
         self.kp = kp
         self.kv = kv
@@ -85,21 +88,22 @@ class DiffIKController:
         self.T_cmd = T_cmd
 
     def setup(self, s):
-        if self.T_cmd is None:
+        if self.T_cmd_fun is not None:
             info = self.model.getInfo(np.array(s.q), np.array(s.dq))
             self.T_cmd = info["poses"][self.ef_frame]
         self.q_des = np.array(s.q)
 
     def get_control(self, state, t):
-        if self.T_cmd is None:
+        if self.T_cmd_fun is not None:
             T_des = self.T_cmd_fun(state)
         else:
             T_des = self.T_cmd
 
+
         dq_des = self.__call__(np.array(state.q), np.array(state.dq), T_des)
         self.q_des += self.dt * dq_des
         if self.control_mode == 3:
-            return FlexivCmd(dq=dq_des, mode=self.control_mode)
+            return FlexivCmd(dq=dq_des, mode=self.control_mode, g_width = self.gripper_width, g_force = self.gripper_force, g_cmd=self.gripper_cmd)
         else:
             return FlexivCmd(
                 q=self.q_des,
@@ -107,6 +111,9 @@ class DiffIKController:
                 kp=self.joint_kp,
                 kv=self.joint_kv,
                 mode=self.control_mode,
+                g_width = self.g_width, 
+                g_force = self.g_force,
+                g_cmd=self.gripper_cmd
             )
 
     def applicable(self, s, t):

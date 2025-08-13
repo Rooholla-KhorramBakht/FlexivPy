@@ -1,22 +1,16 @@
 from FlexivPy.vision import RealSenseCamera
 import time
 from FlexivPy.robot.dds.flexiv_messages import EnvImage
-
 from datetime import datetime
 import numpy as np
-
-
 import cv2
-
 from cyclonedds.domain import DomainParticipant
 from cyclonedds.topic import Topic
 from cyclonedds.pub import Publisher, DataWriter
 import time
-
 from cyclonedds.domain import DomainParticipant
 from cyclonedds.topic import Topic
 from FlexivPy.robot.dds.flexiv_messages import EnvImage
-
 
 class ImagePublisher:
     def __init__(self, realsense_camera: RealSenseCamera, dt=0.01):

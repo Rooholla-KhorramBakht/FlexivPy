@@ -131,4 +131,4 @@ class NonBlockingRunner:
 
     def close(self):
         self.running = False
-        self.thread.join()
+        # self.thread.join()
